@@ -1,70 +1,67 @@
-"use strict";
-
-var canvas;
 var gl;
 var points;
 
-var NumPoints = 5000;
+var numPoints = 5000;
 
-window.onload = function init()
-{
-    canvas = document.getElementById( "gl-canvas" );
-
-    gl = WebGLUtils.setupWebGL( canvas );
-    if ( !gl ) { alert( "WebGL isn't available" ); }
-
-    //
-    //  Initialize our data for the Sierpinski Gasket
-    //
-
-    // First, initialize the vertices of our 3D gasket
-
-    var vertices = [
-        vec3( -0.5, -0.5, -0.5 ),
-        vec3(  0.5, -0.5, -0.5 ),
-        vec3(  0.0,  0.5,  0.0 ),
-        vec3(  0.0, -0.5, 0.5 ),
-    ];
+window.onload = function() {
 
 
-    points = [ vec3( 0.0, 0.0, 0.0 ) ];
 
-    for ( var i = 0; points.length < NumPoints; ++i ) {
-        var j = Math.floor(Math.random() * 4);
+  //
+  //  Initialize our data for the Sierpinski Gasket
+  //
+  // First, initialize the corners of our gasket with three points.
 
-        points.push(mix(points[i], vertices[j], 0.5) );
-    }
+  var vertices = [
+    vec3(-0.5, -0.5, -0.5),
+    vec3(0.5, -0.5, -0.5),
+    vec3(0.0, 0.5, 0.0),
+    vec3(0.0, -0.5, 0.5)
+  ];
 
-    //
-    //  Configure WebGL
-    //
-    gl.viewport( 0, 0, canvas.width, canvas.height );
-    gl.clearColor( 1.0, 1.0, 1.0, 1.0 );
-    gl.enable( gl.DEPTH_TEST );
+  points = [ vec3(0.0, 0.0, 0.0) ];
 
-    //  Load shaders and initialize attribute buffers
+  // Compute new points
+  // Each new point is located midway between
+  // last point and a randomly chosen vertex
 
-    var program = initShaders( gl, "vertex-shader", "fragment-shader" );
-    gl.useProgram( program );
+  for (var i = 0; i < numPoints; ++i) { // we created points
+    var j = Math.floor(Math.random() * 4);
 
-    // Load the data into the GPU
+    points.push(mix(points[i], vertices[j], 0.5));
+  };
 
-    var bufferId = gl.createBuffer();
-    gl.bindBuffer( gl.ARRAY_BUFFER, bufferId );
-    gl.bufferData( gl.ARRAY_BUFFER, flatten(points), gl.STATIC_DRAW );
+  //
+  //  Configure WebGL
+  //
 
-    // Associate out shader variables with our data buffer
+  var canvas = document.getElementById( "gl-canvas" );
 
-    var vPosition = gl.getAttribLocation( program, "vPosition" );
-    gl.vertexAttribPointer( vPosition, 3, gl.FLOAT, false, 0, 0 );
-    gl.enableVertexAttribArray( vPosition );
+  gl = WebGLUtils.setupWebGL( canvas );
+  if ( !gl ) { alert( "WebGL isn't available" ); }
 
-    render();
-};
+  gl.viewport( 0, 0, canvas.width, canvas.height );
+  gl.clearColor( 1.0, 1.0, 1.0, 1.0 );
+  gl.enable( gl.DEPTH_TEST );
+
+  //  Load shaders and initialize attribute buffers
+
+  var program = initShaders( gl, "vertex-shader", "fragment-shader" );
+  gl.useProgram( program );
 
 
-function render()
-{
-    gl.clear( gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT );
+  var vBuffer = gl.createBuffer();
+  gl.bindBuffer( gl.ARRAY_BUFFER, vBuffer );
+  gl.bufferData( gl.ARRAY_BUFFER, flatten(points), gl.STATIC_DRAW );
+
+  var vPosition = gl.getAttribLocation( program, "vPosition");
+  gl.vertexAttribPointer( vPosition, 3, gl.FLOAT, false, 0, 0 );
+  gl.enableVertexAttribArray( vPosition );
+
+  render(); // have the GPU render those data.
+}
+
+function render() {
+    gl.clear( gl.COLOR_BUFFER_BIT ); // clear frame buffer
     gl.drawArrays( gl.POINTS, 0, points.length );
 }
